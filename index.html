@@ -2,105 +2,260 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Canlı Stok Takip</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stok Takip Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
     <style>
-        body { background-color: #f4f6f9; padding-top: 20px; }
-        .scanner-area { width: 100%; max-width: 500px; margin: 0 auto; }
-        #reader { width: 100%; border-radius: 10px; overflow: hidden; display: none; }
-        .result-box { display: none; margin-top: 20px; border-left: 5px solid #0d6efd; }
-        .btn-scan { height: 50px; font-size: 1.1rem; }
-        #loadingStatus { font-size: 0.9rem; color: #666; text-align: center; margin-bottom: 10px; }
+        body { background-color: #eef2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .main-container { max-width: 600px; margin: 0 auto; padding-bottom: 50px; }
+        
+        /* Header */
+        .app-header { background: linear-gradient(135deg, #0d6efd, #0a58ca); color: white; padding: 20px; border-radius: 0 0 20px 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(13, 110, 253, 0.2); }
+        
+        /* Scanner */
+        #reader { width: 100%; border-radius: 12px; overflow: hidden; display: none; border: 2px solid #0d6efd; }
+        
+        /* Result Card */
+        .result-card { border: none; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.05); display: none; background: white; }
+        .product-title { background-color: #f8f9fa; padding: 15px; border-bottom: 1px solid #eee; font-weight: 700; color: #333; font-size: 1.1rem; text-align: center; }
+        
+        /* Table Styling */
+        .info-table { width: 100%; margin-bottom: 0; }
+        .info-table td { padding: 12px 15px; vertical-align: middle; border-bottom: 1px solid #f0f0f0; }
+        .label-cell { width: 40%; color: #6c757d; font-weight: 500; font-size: 0.9rem; }
+        .value-cell { font-weight: 600; color: #212529; }
+        
+        /* Quantity Box */
+        .qty-box { background-color: #e8f5e9; color: #198754; text-align: center; padding: 20px; margin: 15px; border-radius: 12px; border: 1px dashed #198754; }
+        .qty-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #198754; opacity: 0.8; }
+        .qty-value { font-size: 2.5rem; font-weight: 800; line-height: 1; }
+
+        /* Input Area */
+        .search-area { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+        .form-control:focus { box-shadow: none; border-color: #0d6efd; }
+        
+        /* Loading */
+        #loadingStatus { font-size: 0.8rem; text-align: center; margin-top: -10px; margin-bottom: 15px; color: rgba(255,255,255,0.8); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="card shadow-sm scanner-area">
-        <div class="card-header bg-success text-white text-center">
-            <h4>📊 Canlı Stok Sistemi</h4>
+<div class="main-container">
+    
+    <div class="app-header text-center">
+        <h3 class="m-0"><i class="bi bi-box-seam me-2"></i>Stok Sorgulama</h3>
+        <div id="loadingStatus" class="mt-2">Veriler yükleniyor...</div>
+    </div>
+
+    <div class="container px-3">
+        
+        <div id="reader" class="mb-3 bg-dark"></div>
+        
+        <div class="d-grid gap-2 mb-3">
+            <button class="btn btn-primary py-3 fw-bold shadow-sm" onclick="startScanner()" id="btnCam">
+                <i class="bi bi-qr-code-scan me-2"></i> Kamerayı Aç
+            </button>
+            <button class="btn btn-danger py-2" onclick="stopScanner()" id="stopBtn" style="display:none;">
+                Kamerayı Kapat
+            </button>
         </div>
-        <div class="card-body">
+
+        <div class="search-area mb-4">
+            <label class="form-label text-muted small">Manuel Barkod Girişi</label>
+            <div class="input-group">
+                <input type="search" id="manualInput" class="form-control form-control-lg" placeholder="kod yazın (örn: urun123)" autocomplete="off">
+                <button class="btn btn-dark px-4" type="button" onclick="manualSearch()">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+            <div class="form-text text-muted small ps-1">*Otomatik 'P' eklenir, büyük harfe çevrilir.</div>
+        </div>
+
+        <div id="errorMsg" class="alert alert-danger shadow-sm text-center" style="display:none;">
+            <i class="bi bi-exclamation-circle me-2"></i><span id="errText"></span>
+        </div>
+
+        <div id="resultCard" class="result-card">
+            <div class="product-title" id="resName">ÜRÜN ADI</div>
             
-            <div id="loadingStatus">
-                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                Veriler Google Sheet'ten çekiliyor...
-            </div>
+            <table class="info-table">
+                <tr>
+                    <td class="label-cell">Barkod (ID)</td>
+                    <td class="value-cell text-primary" id="resBarcode"></td>
+                </tr>
+                <tr>
+                    <td class="label-cell">Firma</td>
+                    <td class="value-cell" id="resFirma"></td>
+                </tr>
+                <tr>
+                    <td class="label-cell">GSDB</td>
+                    <td class="value-cell" id="resGSDB"></td>
+                </tr>
+                <tr>
+                    <td class="label-cell">Lokasyon</td>
+                    <td class="value-cell" id="resLokasyon"></td>
+                </tr>
+            </table>
 
-            <div id="reader" class="mb-3"></div>
-            
-            <div class="d-grid gap-2">
-                <button class="btn btn-primary btn-scan" onclick="startScanner()" id="btnCam">📷 Tara</button>
-                <button class="btn btn-danger" onclick="stopScanner()" id="stopBtn" style="display:none;">Kamerayı Kapat</button>
-            </div>
-
-            <div class="text-center my-3">- VEYA -</div>
-
-            <div class="input-group mb-3">
-                <input type="text" id="manualInput" class="form-control" placeholder="Barkod giriniz...">
-                <button class="btn btn-outline-secondary" type="button" onclick="manualSearch()">Ara</button>
-            </div>
-
-            <div id="resultCard" class="card result-box shadow">
-                <div class="card-body">
-                    <h5 class="card-title text-primary" id="productName">...</h5>
-                    <hr>
-                    <p><strong>Barkod:</strong> <span id="resBarcode"></span></p>
-                    <p><strong>Stok:</strong> <span id="resStock" class="badge bg-warning text-dark fs-6"></span></p>
-                    <p><strong>Firma:</strong> <span id="resCompany"></span></p>
-                    <p class="text-muted"><small id="resDesc"></small></p>
-                </div>
-            </div>
-
-            <div id="errorMsg" class="alert alert-danger mt-3" style="display:none;">
-                Ürün bulunamadı veya veri yüklenmedi!
+            <div class="qty-box">
+                <div class="qty-title">MEVCUT STOK ADEDİ</div>
+                <div class="qty-value" id="resAdet">0</div>
             </div>
         </div>
+
     </div>
 </div>
 
 <script>
-    // --- 1. GOOGLE SHEET AYARLARI ---
-    // "Web'de Yayınla > CSV" formatındaki linki tırnak içine yapıştırın:
-    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ7C0OOOOVKyssc7M7xVx-YN9NsfO8Nyz6290hzQ2LDZAznpXQNUE5o5seCP0yNC1rBtU5nWjFZMmRY/pub?gid=0&single=true&output=csv";
+    // ==========================================
+    // 1. AYARLAR: CSV LİNKİNİ BURAYA YAPIŞTIRIN
+    // ==========================================
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ7C0OOOOVKyssc7M7xVx-YN9NsfO8Nyz6290hzQ2LDZAznpXQNUE5o5seCP0yNC1rBtU5nWjFZMmRY/pub?output=csv";
 
     let urunListesi = [];
 
-    // Sayfa açılınca verileri çek
+    // Sayfa Yüklendiğinde Veriyi Çek
     window.onload = function() {
         Papa.parse(SHEET_URL, {
             download: true,
-            header: true, // Başlık satırını anahtar olarak kullanır
+            header: true,
+            skipEmptyLines: true,
             complete: function(results) {
                 urunListesi = results.data;
-                console.log("Veriler Yüklendi:", urunListesi);
-                
-                // Yükleme mesajını güncelle
                 const status = document.getElementById('loadingStatus');
-                status.innerHTML = "✅ Veriler Güncel (" + urunListesi.length + " Ürün)";
-                status.style.color = "green";
+                status.innerHTML = `<i class="bi bi-cloud-check me-1"></i> Sistem Hazır (${urunListesi.length} Ürün)`;
+                console.log("Yüklenen Veri:", urunListesi);
             },
             error: function(err) {
-                document.getElementById('loadingStatus').innerHTML = "❌ Veri çekilemedi. Linki kontrol edin.";
-                console.error("Hata:", err);
+                document.getElementById('loadingStatus').innerText = "Bağlantı Hatası!";
+            }
+        });
+
+        // Enter tuşu ile arama yapma
+        document.getElementById("manualInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                manualSearch();
+                document.getElementById("manualInput").blur(); // Klavyeyi kapat
             }
         });
     };
 
-    // --- 2. ARAMA MANTIĞI ---
-    function searchProduct(code) {
-        // Boşlukları temizle ve stringe çevirerek ara
-        const cleanCode = code.toString().trim();
+    // ==========================================
+    // 2. GELİŞMİŞ ARAMA MANTIĞI
+    // ==========================================
+    function searchProduct(rawData) {
+        // 1. Boşlukları temizle
+        let cleanData = rawData.toString().trim();
         
-        // Google Sheet sütun başlıklarına göre arama yapıyoruz
-        // Sheet başlıklarınız: Barkod, UrunAdi, Stok, Firma, Aciklama olmalı.
-        const result = urunListesi.find(p => p.Barkod && p.Barkod.toString().trim() === cleanCode);
+        // 2. Büyük harfe çevir (Kullanıcı 'urun' yazarsa 'URUN' olur)
+        cleanData = cleanData.toUpperCase();
+
+        // 3. Başında 'P' yoksa ekle
+        if (!cleanData.startsWith('P')) {
+            cleanData = 'P' + cleanData;
+        }
+
+        console.log("Aranan Kod:", cleanData); // Konsoldan kontrol etmek için
+
+        // 4. Listede Arama Yap
+        const result = urunListesi.find(p => p.Barkod && p.Barkod.toString().trim().toUpperCase() === cleanData);
         
-        const resultCard = document.getElementById('resultCard');
+        renderResult(result, cleanData);
+    }
+
+    function manualSearch() {
+        const val = document.getElementById('manualInput').value;
+        if(val) searchProduct(val);
+    }
+
+    // ==========================================
+    // 3. SONUÇLARI EKRANA BASMA
+    // ==========================================
+    function renderResult(data, searchedCode) {
+        const card = document.getElementById('resultCard');
+        const errorDiv = document.getElementById('errorMsg');
+
+        if (data) {
+            // Verileri yerleştir
+            document.getElementById('resName').innerText = data.ParcaAdi || "İsimsiz Parça";
+            document.getElementById('resBarcode').innerText = data.Barkod;
+            document.getElementById('resFirma').innerText = data.Firma || "-";
+            document.getElementById('resGSDB').innerText = data.GSDB || "-";
+            document.getElementById('resLokasyon').innerText = data.Lokasyon || "-";
+            document.getElementById('resAdet').innerText = data.Adet || "0";
+
+            // Göster/Gizle
+            card.style.display = 'block';
+            errorDiv.style.display = 'none';
+            
+            // Sayfayı sonuca kaydır
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        } else {
+            card.style.display = 'none';
+            errorDiv.style.display = 'block';
+            document.getElementById('errText').innerText = `"${searchedCode}" barkodlu ürün bulunamadı.`;
+        }
+    }
+
+    // ==========================================
+    // 4. KAMERA / BARKOD OKUYUCU
+    // ==========================================
+    let html5QrcodeScanner;
+
+    function startScanner() {
+        document.getElementById('resultCard').style.display = 'none';
+        document.getElementById('reader').style.display = "block";
+        document.getElementById('stopBtn').style.display = "block";
+        document.getElementById('btnCam').style.display = "none";
+        
+        html5QrcodeScanner = new Html5Qrcode("reader");
+        
+        const config = { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+        };
+        
+        html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
+        .catch(err => {
+            alert("Kamera başlatılamadı. İzinleri kontrol edin.");
+            stopScanner();
+        });
+    }
+
+    function stopScanner() {
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.stop().then(() => {
+                document.getElementById('reader').style.display = "none";
+                document.getElementById('stopBtn').style.display = "none";
+                document.getElementById('btnCam').style.display = "block";
+            }).catch(err => console.log(err));
+        }
+    }
+
+    function onScanSuccess(decodedText) {
+        stopScanner();
+        // Okunan kodu inputa yaz (kullanıcı görsün)
+        // Ancak 'P' eklenmemiş halini yazabiliriz veya eklenmiş halini, 
+        // burada ham halini yazıp searchProduct içinde işliyoruz.
+        document.getElementById('manualInput').value = decodedText;
+        
+        // Hızlı bir bip sesi efekti (Tarayıcı destekliyorsa)
+        if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(200);
+        }
+        
+        searchProduct(decodedText);
+    }
+</script>
+
+</body>
+</html>
         const errorMsg = document.getElementById('errorMsg');
 
         if (result) {

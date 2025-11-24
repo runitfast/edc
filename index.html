@@ -189,4 +189,69 @@
             // VERİLERİ YAZARKEN ARTIK "cleanText" KULLANIYORUZ
             // Böylece "  Balata  " gibi gelen veri "Balata" olur.
             
-            document.getElementById('resName').innerText = cleanText(data.ParcaAdi) || "İsim
+            document.getElementById('resName').innerText = cleanText(data.ParcaAdi) || "İsimsiz Parça";
+            document.getElementById('resBarcode').innerText = cleanText(data.Barkod);
+            document.getElementById('resFirma').innerText = cleanText(data.Firma) || "-";
+            document.getElementById('resGSDB').innerText = cleanText(data.GSDB) || "-";
+            document.getElementById('resLokasyon').innerText = cleanText(data.Lokasyon) || "-";
+            document.getElementById('resAdet').innerText = cleanText(data.Adet) || "0";
+
+            card.style.display = 'block';
+            errorDiv.style.display = 'none';
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        } else {
+            card.style.display = 'none';
+            errorDiv.style.display = 'block';
+            document.getElementById('errText').innerText = `"${searchedCode}" barkodlu ürün bulunamadı.`;
+        }
+    }
+
+    // ==========================================
+    // 4. KAMERA / BARKOD OKUYUCU
+    // ==========================================
+    let html5QrcodeScanner;
+
+    function startScanner() {
+        document.getElementById('resultCard').style.display = 'none';
+        document.getElementById('reader').style.display = "block";
+        document.getElementById('stopBtn').style.display = "block";
+        document.getElementById('btnCam').style.display = "none";
+        
+        html5QrcodeScanner = new Html5Qrcode("reader");
+        
+        const config = { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+        };
+        
+        html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
+        .catch(err => {
+            alert("Kamera başlatılamadı. İzinleri kontrol edin.");
+            stopScanner();
+        });
+    }
+
+    function stopScanner() {
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.stop().then(() => {
+                document.getElementById('reader').style.display = "none";
+                document.getElementById('stopBtn').style.display = "none";
+                document.getElementById('btnCam').style.display = "block";
+            }).catch(err => console.log(err));
+        }
+    }
+
+    function onScanSuccess(decodedText) {
+        stopScanner();
+        document.getElementById('manualInput').value = decodedText;
+        if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(200);
+        }
+        searchProduct(decodedText);
+    }
+</script>
+
+</body>
+</html>

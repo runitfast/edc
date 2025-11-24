@@ -14,11 +14,11 @@
         body { background-color: #eef2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow-x: hidden; }
         .main-container { max-width: 600px; margin: 0 auto; }
         
-        /* Daha İnce Header */
+        /* Header */
         .app-header { background: linear-gradient(135deg, #0d6efd, #0a58ca); color: white; padding: 15px; border-radius: 0 0 15px 15px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(13, 110, 253, 0.2); }
         .app-header h4 { font-size: 1.2rem; font-weight: 600; margin: 0; }
         
-        /* Kamera - Tam Oturması İçin */
+        /* Kamera */
         #reader { 
             width: 100%; 
             border-radius: 10px; 
@@ -35,11 +35,11 @@
             border-radius: 10px;
         }
         
-        /* Sonuç Kartı - Daha Kompakt */
+        /* Sonuç Kartı */
         .result-card { border: none; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: none; background: white; margin-bottom: 10px; }
         .product-title { background-color: #f8f9fa; padding: 10px; border-bottom: 1px solid #eee; font-weight: 700; color: #333; font-size: 1rem; text-align: center; }
         
-        /* Tablo - Satır Araları Kısıldı */
+        /* Tablo */
         .info-table { width: 100%; margin-bottom: 0; }
         .info-table td { padding: 8px 12px; vertical-align: middle; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
         .label-cell { width: 35%; color: #6c757d; font-weight: 500; }
@@ -56,7 +56,6 @@
         
         #loadingStatus { font-size: 0.75rem; text-align: center; margin-top: 5px; color: rgba(255,255,255,0.8); }
         
-        /* Butonlar */
         .btn-custom-lg { padding: 10px; font-size: 1rem; }
     </style>
 </head>
@@ -65,7 +64,7 @@
 <div class="main-container">
     
     <div class="app-header text-center">
-        <h4><i class="bi bi-box-seam me-2"></i>Adet Sorgulama</h4>
+        <h4><i class="bi bi-box-seam me-2"></i>Stok & Dock Kontrol</h4>
         <div id="loadingStatus">Veriler yükleniyor...</div>
     </div>
 
@@ -113,6 +112,10 @@
                     <td class="value-cell" id="resGSDB"></td>
                 </tr>
                 <tr>
+                    <td class="label-cell">Dock Kodu</td>
+                    <td class="value-cell text-danger" id="resDock"></td>
+                </tr>
+                <tr>
                     <td class="label-cell">Lokasyon</td>
                     <td class="value-cell" id="resLokasyon"></td>
                 </tr>
@@ -128,7 +131,7 @@
 </div>
 
 <script>
-    // Linkiniz (Değiştirmedim)
+    // Linkiniz
     const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ7C0OOOOVKyssc7M7xVx-YN9NsfO8Nyz6290hzQ2LDZAznpXQNUE5o5seCP0yNC1rBtU5nWjFZMmRY/pub?output=csv";
 
     let urunListesi = [];
@@ -185,15 +188,16 @@
             document.getElementById('resBarcode').innerText = cleanText(data.Barkod);
             document.getElementById('resFirma').innerText = cleanText(data.Firma) || "-";
             document.getElementById('resGSDB').innerText = cleanText(data.GSDB) || "-";
+            
+            // Dock Kodu Verisini Çekme
+            document.getElementById('resDock').innerText = cleanText(data.DockKodu) || "-";
+            
             document.getElementById('resLokasyon').innerText = cleanText(data.Lokasyon) || "-";
             document.getElementById('resAdet').innerText = cleanText(data.Adet) || "0";
 
             card.style.display = 'block';
             errorDiv.style.display = 'none';
-            
-            // --- DEĞİŞİKLİK: Kaydırma komutu (scrollIntoView) SİLİNDİ ---
-            // Artık sayfa zıplamayacak.
-            
+            // Scroll özelliği kapalı
         } else {
             card.style.display = 'none';
             errorDiv.style.display = 'block';
@@ -242,4 +246,3 @@
 
 </body>
 </html>
- 
